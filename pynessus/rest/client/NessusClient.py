@@ -24,7 +24,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 import requests
 import json
 
-#http://static.tenable.com/documentation/nessus_5.0_XMLRPC_protocol_guide.pdf
+
+# http://static.tenable.com/documentation/nessus_5.0_XMLRPC_protocol_guide.pdf
 class NessusClient:
     '''
     NessusClient. Class to consume the REST services defined running in a instance of Nessus Scanner.
@@ -33,7 +34,7 @@ class NessusClient:
     def __init__(self, nessusServer, nessusPort, validateCert=False, initialSeqNumber=1):
         self.nessusServer = nessusServer
         self.nessusPort = nessusPort
-        self.url='https://'+str(nessusServer)+':'+str(nessusPort)
+        self.url = 'https://'+str(nessusServer)+':'+str(nessusPort)
         self.token = None
         self.headers = {}
         self.bodyRequest = {}
@@ -72,6 +73,7 @@ class NessusClient:
                                 'policy_copy':'/policy/copy',
                                 'policy_add':'/policy/add',
                                 'policy_edit':'/policy/edit',
+                                'policy_update':'/policy/update',
                                 'policy_download':'/policy/download',
                                 'policy_file_upload':'/file/upload',
                                 'policy_file_policy_import':'/file/policy/import',
@@ -134,11 +136,13 @@ class NessusClient:
         Perform a request to Nessus server using the data and headers received by parameter.
         This function automatically increments the sequence identifier for Nessus requests.
         '''
+        # print 'DDDDDDDDD', url, self.body, self.headers, self.validateCert
         if method == "GET":
             response = requests.get(url, data=self.body, headers=self.headers, verify=self.validateCert)
         else:
             response = requests.post(url, data=self.body, headers=self.headers, verify=self.validateCert)
         self.seqNumber += 1
+        # print response.__dict__, self.__dict__
         try:
             return json.loads(response.content)
         except ValueError:
@@ -348,6 +352,12 @@ class NessusClient:
     def policyEdit(self, policyData, jsonFormat=True, method="POST"):
         self.constructParamsAndHeaders(headers=policyData , jsonFormat=jsonFormat)
         content = self.requestNessus(self.url+self.nessusFunctions['policy_edit'], method=method)
+        return content
+
+    def policyUpdate(self, policyId, policyChangedData, jsonFormat=True, method="POST"):
+        policyChangedData['policy_id'] = str(policyId)
+        self.constructParamsAndHeaders(params=policyChangedData, jsonFormat=jsonFormat)
+        content = self.requestNessus(self.url+self.nessusFunctions['policy_update'], method=method)
         return content
 
     def policyDownload(self, policyId):
