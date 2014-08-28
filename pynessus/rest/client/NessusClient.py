@@ -71,8 +71,6 @@ class NessusClient:
                                 'plugins_descriptions': '/plugins/descriptions',
                                 'policy_preferences_list': '/preferences/list',
                                 'policy_list': '/policy/list',
-                                'policy_list_policies': '/policy/list/policies',
-                                'policy_list_metadata': '/policy/list/metadata',
                                 'policy_delete': '/policy/delete',
                                 'policy_copy': '/policy/copy',
                                 'policy_add': '/policy/add',
@@ -91,7 +89,6 @@ class NessusClient:
                                 'scan_template_edit': '/scan/template/edit',
                                 'scan_template_delete': '/scan/template/delete',
                                 'scan_template_launch': '/scan/template/launch',
-                                'schedule_new': '/schedule/new',
                                 'report_list': '/report/list',
                                 'report_delete': '/report/delete',
                                 'report_hosts': '/report/hosts',
@@ -117,7 +114,13 @@ class NessusClient:
                                 'report_file_download': '/file/report/download',
                                 'report_file_xslt_list': '/file/xslt/list',
                                 'report_file_xslt': '/file/xslt',
-                                'report_file_xslt_download': '/file/xslt/download'
+                                'report_file_xslt_download': '/file/xslt/download',
+                                # undocumented REST API used by the Nessus web UI
+                                'policy_list_policies': '/policy/list/policies',
+                                'policy_list_metadata': '/policy/list/metadata',
+                                'result_list': '/result/list',
+                                'result_status_set': '/result/status/set',
+                                'schedule_new': '/schedule/new'
                                 }
 
     def constructParamsAndHeaders(self, headers={}, params={}, jsonFormat=True):
@@ -141,7 +144,7 @@ class NessusClient:
         Perform a request to Nessus server using the data and headers received by parameter.
         This function automatically increments the sequence identifier for Nessus requests.
         '''
-        print 'DDDDDDDDD', url, self.body, self.headers, self.validateCert
+        # print 'DDDDDDDDD', url, self.body, self.headers, self.validateCert
         if method == "GET":
             response = requests.get(url, data=self.body, headers=self.headers, verify=self.validateCert)
         else:
@@ -470,13 +473,23 @@ class NessusClient:
     def scheduleScan(self, target, policyId, scanName, scan_date, frequency='FREQ=ONETIME', jsonFormat=True, method="POST"):
         scan_date_epoch = time.strftime("%Y%m%dT%H%M%S", time.strptime(scan_date, "%Y-%m-%d %H:%M:%S"))
         print 'scan_date_epoch', scan_date_epoch
-        self.constructParamsAndHeaders(params={'target': str(target),
+        self.constructParamsAndHeaders(params={'custom_targets': str(target),
                                                'policy_id': str(policyId),
-                                               'scan_name': str(scanName),
+                                               'name': str(scanName),
                                                'rrules': frequency,
                                                'starttime': scan_date_epoch,
                                                'timezone': 'UTC'}, jsonFormat=jsonFormat)
         content = self.requestNessus(self.url+self.nessusFunctions['schedule_new'], method=method)
+        return content
+
+    def resultList(self, jsonFormat=True, method="POST"):
+        self.constructParamsAndHeaders(jsonFormat=jsonFormat)
+        content = self.requestNessus(self.url+self.nessusFunctions['result_list'], method=method)
+        return content
+
+    def resultSetStatus(self, reportUuid, new_status, jsonFormat=True, method="POST"):
+        self.constructParamsAndHeaders(params={'id': reportUuid, 'status': new_status}, jsonFormat=jsonFormat)
+        content = self.requestNessus(self.url+self.nessusFunctions['result_status_set'], method=method)
         return content
 
     def reportList(self, jsonFormat=True, method="POST"):
@@ -614,11 +627,12 @@ class NessusClient:
         content = self.requestNessus(self.url+self.nessusFunctions['report_chapter'], method=method)
         return content
 
-    def reportFileDownload(self, reportUuid, v1=False, v2=True, jsonFormat=True, method="POST"):
-        self.constructParamsAndHeaders(params={'report': reportUuid,
-                                               'v1': v1,
-                                               'v2': v2}, jsonFormat=jsonFormat)
-        content = self.requestNessus(self.url+self.nessusFunctions['report_chapter'], method=method)
+    def reportFileDownload(self, reportUuid, version='v2', jsonFormat=True, method="POST"):
+        params = {'report': reportUuid}
+        if version == 'v1':
+            params['v1'] = 'True'
+        self.constructParamsAndHeaders(params=params, jsonFormat=jsonFormat)
+        content = self.requestNessus(self.url+self.nessusFunctions['report_file_download'], method=method)
         return content
 
     def reportFileImport(self, fileName, jsonFormat=True, method="POST"):
