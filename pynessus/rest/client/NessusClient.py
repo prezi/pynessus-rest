@@ -293,10 +293,9 @@ class NessusClient:
         return content
 
     def pluginsAttributesFamilySearch(self, filter0Quality, filterSearchType, filter0Value, filter0Filter, jsonFormat=True, method="POST"):
-
-        # filter.0.quality – Four values are allowed here: match, nmatch, eq, neq
-        # filter.search_type – The types of search: or, and
-        # filter.0.filter – A full list of plugin attributes can be obtained from the /plugins/attributes/list function.
+        # filter.0.quality - Four values are allowed here: match, nmatch, eq, neq
+        # filter.search_type - The types of search: or, and
+        # filter.0.filter - A full list of plugin attributes can be obtained from the /plugins/attributes/list function.
         self.constructParamsAndHeaders(params={'filter.0.quality': filter0Quality,
                                                'filter.search_type': filterSearchType,
                                                'filter.0.value': filter0Value,
